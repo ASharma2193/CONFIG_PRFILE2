@@ -493,9 +493,18 @@ function generateHTML() {
                                     <input type="radio" id="ambientOn" name="ambient" value="ON">
                                     <label for="ambientOn">ON</label>
                                 </div>
+                                <div class="radio-option">
+                                    <input type="radio" id="ambientManual" name="ambient" value="MANUAL">
+                                    <label for="ambientManual">Manual Command</label>
+                                </div>
                             </div>
                             <div class="command-info">
                                 When Ambient Trigger is ON: AT+LIGHT=1,516,300 will be added
+                            </div>
+                            <div id="ambientManualCommand" class="manual-command">
+                                <label for="ambientManualInput">Manual Ambient Command</label>
+                                <input type="text" id="ambientManualInput" class="form-control" placeholder="e.g., AT+LIGHT=1,500,250">
+                                <div class="info-text">Enter custom AT command for ambient trigger</div>
                             </div>
                         </div>
                         
@@ -510,9 +519,18 @@ function generateHTML() {
                                     <input type="radio" id="shockOn" name="shock" value="ON">
                                     <label for="shockOn">ON</label>
                                 </div>
+                                <div class="radio-option">
+                                    <input type="radio" id="shockManual" name="shock" value="MANUAL">
+                                    <label for="shockManual">Manual Command</label>
+                                </div>
                             </div>
                             <div class="command-info">
                                 When Shock Trigger is ON: AT+MOTION=2,10,3600 & AT+VIBPARAM=1,0,160 will be added
+                            </div>
+                            <div id="shockManualCommand" class="manual-command">
+                                <label for="shockManualInput">Manual Shock Command</label>
+                                <input type="text" id="shockManualInput" class="form-control" placeholder="e.g., AT+MOTION=2,15,1800">
+                                <div class="info-text">Enter custom AT command for shock trigger</div>
                             </div>
                         </div>
                         
@@ -593,7 +611,9 @@ function generateHTML() {
                 wifi: "ON",
                 ble: "OFF",
                 ambient: "OFF",
+                ambientManualCommand: "",
                 shock: "OFF",
+                shockManualCommand: "",
                 sensors: ["Temp"],
                 prfEnabled: "NO",
                 prfValue: 300,
@@ -608,7 +628,9 @@ function generateHTML() {
                 wifi: "ON",
                 ble: "ON",
                 ambient: "ON",
+                ambientManualCommand: "",
                 shock: "ON",
+                shockManualCommand: "",
                 sensors: ["Temp", "Hum", "Amb"],
                 prfEnabled: "YES",
                 prfValue: 300,
@@ -627,7 +649,15 @@ function generateHTML() {
         const emptyState = document.getElementById('emptyState');
         const formTitle = document.getElementById('formTitle');
         
-        // Manual command toggles removed
+        // Toggle manual command inputs
+        const ambientRadios = document.querySelectorAll('input[name="ambient"]');
+        const ambientManualCommand = document.getElementById('ambientManualCommand');
+        const ambientManualInput = document.getElementById('ambientManualInput');
+        
+        const shockRadios = document.querySelectorAll('input[name="shock"]');
+        const shockManualCommand = document.getElementById('shockManualCommand');
+        const shockManualInput = document.getElementById('shockManualInput');
+        
         const prfRadios = document.querySelectorAll('input[name="prfEnabled"]');
         const prfOptions = document.getElementById('prfOptions');
         
@@ -640,6 +670,32 @@ function generateHTML() {
         backToListBtn.addEventListener('click', showTable);
         cancelBtn.addEventListener('click', showTable);
         configProfileForm.addEventListener('submit', handleFormSubmit);
+        
+        // Toggle Ambient manual command input
+        ambientRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'MANUAL') {
+                    ambientManualCommand.classList.add('active');
+                    ambientManualInput.required = true;
+                } else {
+                    ambientManualCommand.classList.remove('active');
+                    ambientManualInput.required = false;
+                }
+            });
+        });
+        
+        // Toggle Shock manual command input
+        shockRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'MANUAL') {
+                    shockManualCommand.classList.add('active');
+                    shockManualInput.required = true;
+                } else {
+                    shockManualCommand.classList.remove('active');
+                    shockManualInput.required = false;
+                }
+            });
+        });
         
         // Toggle PRF options
         prfRadios.forEach(radio => {
@@ -693,10 +749,30 @@ function generateHTML() {
             document.querySelector('input[name="ble"][value="' + profile.ble + '"]').checked = true;
             
             // Set Ambient radio
-            document.querySelector('input[name="ambient"][value="' + profile.ambient + '"]').checked = true;
+            let ambientValue = profile.ambient;
+            if (profile.ambientManualCommand) {
+                ambientValue = "MANUAL";
+            }
+            document.querySelector('input[name="ambient"][value="' + ambientValue + '"]').checked = true;
+            
+            // Set Ambient manual command if applicable
+            if (profile.ambientManualCommand) {
+                ambientManualCommand.classList.add('active');
+                ambientManualInput.value = profile.ambientManualCommand;
+            }
             
             // Set Shock radio
-            document.querySelector('input[name="shock"][value="' + profile.shock + '"]').checked = true;
+            let shockValue = profile.shock;
+            if (profile.shockManualCommand) {
+                shockValue = "MANUAL";
+            }
+            document.querySelector('input[name="shock"][value="' + shockValue + '"]').checked = true;
+            
+            // Set Shock manual command if applicable
+            if (profile.shockManualCommand) {
+                shockManualCommand.classList.add('active');
+                shockManualInput.value = profile.shockManualCommand;
+            }
             
             // Set Sensors checkboxes
             document.querySelectorAll('input[name="sensor"]').forEach(checkbox => {
@@ -725,6 +801,10 @@ function generateHTML() {
         
         function resetForm() {
             configProfileForm.reset();
+            ambientManualCommand.classList.remove('active');
+            ambientManualInput.value = '';
+            shockManualCommand.classList.remove('active');
+            shockManualInput.value = '';
             prfOptions.classList.remove('active');
             document.getElementById('prfValue').value = '300';
             document.getElementById('sensorFreqValue').value = '300';
@@ -748,7 +828,9 @@ function generateHTML() {
             const wifi = document.querySelector('input[name="wifi"]:checked').value;
             const ble = document.querySelector('input[name="ble"]:checked').value;
             const ambient = document.querySelector('input[name="ambient"]:checked').value;
+            const ambientManualCommand = document.getElementById('ambientManualInput').value;
             const shock = document.querySelector('input[name="shock"]:checked').value;
+            const shockManualCommand = document.getElementById('shockManualInput').value;
             
             // Get selected sensors
             const sensorCheckboxes = document.querySelectorAll('input[name="sensor"]:checked');
@@ -757,6 +839,17 @@ function generateHTML() {
             const prfEnabled = document.querySelector('input[name="prfEnabled"]:checked').value;
             const prfValue = prfEnabled === 'YES' ? parseInt(document.getElementById('prfValue').value) : 0;
             const sensorFreqValue = prfEnabled === 'YES' ? parseInt(document.getElementById('sensorFreqValue').value) : 0;
+            
+            // Validate manual commands
+            if (ambient === 'MANUAL' && !ambientManualCommand.trim()) {
+                alert("Please enter a manual command for Ambient Trigger");
+                return;
+            }
+            
+            if (shock === 'MANUAL' && !shockManualCommand.trim()) {
+                alert("Please enter a manual command for Shock Trigger");
+                return;
+            }
             
             // Validate PRF values if enabled
             if (prfEnabled === 'YES') {
@@ -770,6 +863,18 @@ function generateHTML() {
                 }
             }
             
+            // Determine actual ambient state for display purposes
+            let ambientDisplayValue = ambient;
+            if (ambient === 'MANUAL') {
+                ambientDisplayValue = 'MANUAL: ' + ambientManualCommand;
+            }
+            
+            // Determine actual shock state for display purposes
+            let shockDisplayValue = shock;
+            if (shock === 'MANUAL') {
+                shockDisplayValue = 'MANUAL: ' + shockManualCommand;
+            }
+            
             // Create profile object
             const profileData = {
                 id: isEditing ? currentProfileId : profiles.length > 0 ? Math.max(...profiles.map(p => p.id)) + 1 : 1,
@@ -779,8 +884,12 @@ function generateHTML() {
                 gps,
                 wifi,
                 ble,
-                ambient,
-                shock,
+                ambient: ambient === 'MANUAL' ? 'MANUAL' : ambient,
+                ambientManualCommand: ambient === 'MANUAL' ? ambientManualCommand : '',
+                ambientDisplayValue,
+                shock: shock === 'MANUAL' ? 'MANUAL' : shock,
+                shockManualCommand: shock === 'MANUAL' ? shockManualCommand : '',
+                shockDisplayValue,
                 sensors,
                 prfEnabled,
                 prfValue,
@@ -858,12 +967,14 @@ function generateHTML() {
         
         // Function to generate AT+SENSORSTATUS command
         function generateSensorStatusCommand(profile) {
+            // For MANUAL options, we need to determine if they should be considered ON or OFF for SENSORSTATUS
+            const ambientBit = profile.ambient === 'ON' || profile.ambient === 'MANUAL' ? '1' : '0';
+            const shockBit = profile.shock === 'ON' || profile.shock === 'MANUAL' ? '1' : '0';
+            
             // Convert ON/OFF to 1/0
             const gpsBit = profile.gps === 'ON' ? '1' : '0';
             const wifiBit = profile.wifi === 'ON' ? '1' : '0';
             const bleBit = profile.ble === 'ON' ? '1' : '0';
-            const ambientBit = profile.ambient === 'ON' ? '1' : '0';
-            const shockBit = profile.shock === 'ON' ? '1' : '0';
             // Last bit is always 0 (Temp&Humi Trigger - not used)
             const lastBit = '0';
             
@@ -876,14 +987,18 @@ function generateHTML() {
             // Add AT+SENSORSTATUS command
             commands.push(generateSensorStatusCommand(profile));
             
-            // Add Ambient Light command if ON
+            // Handle Ambient commands
             if (profile.ambient === 'ON') {
                 commands.push('AT+LIGHT=1,516,300');
+            } else if (profile.ambient === 'MANUAL' && profile.ambientManualCommand) {
+                commands.push(profile.ambientManualCommand);
             }
             
-            // Add Shock command if ON
+            // Handle Shock commands
             if (profile.shock === 'ON') {
                 commands.push('AT+MOTION=2,10,3600 & AT+VIBPARAM=1,0,160');
+            } else if (profile.shock === 'MANUAL' && profile.shockManualCommand) {
+                commands.push(profile.shockManualCommand);
             }
             
             // Add Sensor mask command if sensors are selected
@@ -917,10 +1032,18 @@ function generateHTML() {
             configs.push('BLE: ' + profile.ble);
             
             // Add Ambient config
-            configs.push('Ambient: ' + profile.ambient);
+            let ambientDisplay = profile.ambient;
+            if (profile.ambient === 'MANUAL' && profile.ambientManualCommand) {
+                ambientDisplay = 'MANUAL: ' + profile.ambientManualCommand;
+            }
+            configs.push('Ambient: ' + ambientDisplay);
             
             // Add Shock config
-            configs.push('Shock: ' + profile.shock);
+            let shockDisplay = profile.shock;
+            if (profile.shock === 'MANUAL' && profile.shockManualCommand) {
+                shockDisplay = 'MANUAL: ' + profile.shockManualCommand;
+            }
+            configs.push('Shock: ' + shockDisplay);
             
             // Add Sensors config
             if (profile.sensors.length > 0) {
