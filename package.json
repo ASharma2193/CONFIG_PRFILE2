@@ -1,8 +1,8 @@
 {
   "name": "config-profile-app",
   "version": "1.0.0",
-  "main": "CONFIGNEW.js",
+  "main": "config.js",
   "scripts": {
-    "start": "node CONFIGNEW.js"
+    "start": "node config.js"
   }
 }
